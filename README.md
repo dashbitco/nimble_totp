@@ -3,11 +3,15 @@
 A tiny library for Two-factor authentication (2FA).
 
 This library allows developers to implement Time-Based One-Time Passwords (TOTP)
-for their applications. It provides functions to:
+for their applications.
+
+It provides functions to:
 
   * Generate secrets composed of random bytes.
   * Generate URIs to be encoded in a QR Code.
   * Generate Time-Based One-Time Passwords for a secret.
+
+Documentation can be found at https://hexdocs.pm/nimble_totp.
 
 ## Installation
 
@@ -34,8 +38,8 @@ secret = NimbleTOTP.secret()
 Generating a URI to be encoded in a QR Code:
 
 ```elixir
-iex> NimbleTOTP.otpauth_uri("Acme:alice", secret, issuer: "Acme")
-"otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme"
+NimbleTOTP.otpauth_uri("Acme:alice", secret, issuer: "Acme")
+#=> "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme"
 ```
 
 Generating a Time-Based One-Time Password for a secret:
