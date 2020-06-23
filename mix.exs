@@ -38,7 +38,6 @@ defmodule NimbleTOTP.MixProject do
 
   defp package do
     [
-      maintainers: ["Andrea Leopardi", "José Valim", "Marlus Saraiva"],
       licenses: ["Apache 2.0"],
       links: %{"GitHub" => @repo_url}
     ]
