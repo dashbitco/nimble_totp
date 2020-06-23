@@ -4,16 +4,6 @@ defmodule NimbleTOTP do
   allows developers to implement Time-Based One-Time Passwords (TOTP)
   for their applications.
 
-  ## Context
-
-  While working on the [Bytepack](https://bytepack.io/) platform
-  at [Dashbit](https://dashbit.co/), one requirement that came up
-  very early was to provide 2FA for our users.
-
-  Although there were already some libraries available to solve
-  that problem, in order to learn the basics involved, we decided
-  to roll our simplified version.
-
   ## Two-factor authentication (2FA)
 
   The concept of 2FA is quite simple. It's an extra layer of security
