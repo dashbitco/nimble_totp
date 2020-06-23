@@ -47,16 +47,16 @@ defmodule NimbleTOTPTest do
 
     test "add leading zeros to reach length 6" do
       secret = Base.decode32!("BKFCZBQPZOXNTER5HKHGPHPGCXBNBDNC")
-      time = DateTime.to_unix(~U[2020-04-08 18:09:11Z])
+      time = to_unix(~N[2020-04-08 18:09:11Z])
 
       assert NimbleTOTP.verification_code(secret, time: time) == "005357"
     end
 
     test "generate different codes in different periods (default is 30s)" do
       secret = NimbleTOTP.secret()
-      time1 = DateTime.to_unix(~U[2020-04-08 17:49:59Z])
-      time2 = DateTime.to_unix(~U[2020-04-08 17:50:00Z])
-      time3 = DateTime.to_unix(~U[2020-04-08 17:50:30Z])
+      time1 = to_unix(~N[2020-04-08 17:49:59Z])
+      time2 = to_unix(~N[2020-04-08 17:50:00Z])
+      time3 = to_unix(~N[2020-04-08 17:50:30Z])
 
       code1 = NimbleTOTP.verification_code(secret, time: time1)
       code2 = NimbleTOTP.verification_code(secret, time: time2)
@@ -69,12 +69,15 @@ defmodule NimbleTOTPTest do
 
     test "generate the same code in the same period" do
       secret = NimbleTOTP.secret()
-      time1 = DateTime.to_unix(~U[2020-04-08 17:50:00Z])
-      time2 = DateTime.to_unix(~U[2020-04-08 17:50:29Z])
+      time1 = to_unix(~N[2020-04-08 17:50:00Z])
+      time2 = to_unix(~N[2020-04-08 17:50:29Z])
       code1 = NimbleTOTP.verification_code(secret, time: time1)
       code2 = NimbleTOTP.verification_code(secret, time: time2)
 
       assert code1 == code2
     end
   end
+
+  defp to_unix(naive_datetime),
+    do: naive_datetime |> DateTime.from_naive!("Etc/UTC") |> DateTime.to_unix()
 end
