@@ -1,9 +1,7 @@
 # NimbleTOTP
 
-A tiny library for Two-factor authentication (2FA).
-
-This library allows developers to implement Time-Based One-Time Passwords (TOTP)
-for their applications.
+This library allows developers to implement Time-based One-Time Passwords (TOTP)
+for their applications as one of the mechanisms for Two-factor authentication (2FA).
 
 It provides functions to:
 
