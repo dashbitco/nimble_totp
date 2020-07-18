@@ -14,7 +14,7 @@ defmodule NimbleTOTP.MixProject do
 
       # Hex
       package: package(),
-      description: "A tiny library for Two-factor authentication (2FA)",
+      description: "A tiny library for time-based one time passwords (TOTP)",
 
       # Docs
       name: "NimbleTOTP",

@@ -42,11 +42,14 @@ NimbleTOTP.otpauth_uri("Acme:alice", secret, issuer: "Acme")
 #=> "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme"
 ```
 
-Generating a Time-Based One-Time Password for a secret:
+Generating a Time-Based One-Time Password for a secret and validating it:
 
 ```elixir
 NimbleTOTP.verification_code(secret)
 #=> "569777"
+
+NimbleTOTP.valid?(secret, "569777")
+#=> true
 ```
 
 ## License

@@ -1,5 +1,5 @@
 defmodule NimbleTOTP do
-  @moduledoc """
+  @moduledoc ~S"""
   NimbleTOTP is a tiny library for Two-factor authentication (2FA) that
   allows developers to implement Time-Based One-Time Passwords (TOTP)
   for their applications.
@@ -28,9 +28,9 @@ defmodule NimbleTOTP do
 
   In order to allow developers to implement 2FA, NimbleTOTP provides functions to:
 
-  * Generate secrets composed of random bytes.
-  * Generate URIs to be encoded in a QR Code.
-  * Generate Time-Based One-Time Passwords based on a secret.
+    * Generate secrets composed of random bytes.
+    * Generate URIs to be encoded in a QR Code.
+    * Generate Time-Based One-Time Passwords based on a secret.
 
   ### Generating the secret
 
@@ -64,19 +64,25 @@ defmodule NimbleTOTP do
   ### Generating a Time-Based One-Time Password
 
   After successfully reading the QR Code, the app will start generating a
-  different 6 digit code every `30s`. The code must be then validated by the
-  authentication layer in your application. You can validate the generated code
-  by comparing it against the value returned by `NimbleTOTP.verification_code/2`.
-
-  Example:
+  different 6 digit code every `30s`. You can compute the verification code
+  with:
 
       NimbleTOTP.verification_code(secret)
       #=> "569777"
+
+  The code can be validated using the `valid?/3` function. Example:
+
+      NimbleTOTP.valid?(secret, "569777")
+      #=> true
+
+      NimbleTOTP.valid?(secret, "012345")
+      #=> false
 
   After validating the code, you can finally persist the user's secret so you use
   it later whenever you need to authorize any critical action using 2FA.
   """
 
+  import Bitwise
   @totp_size 6
   @default_totp_period 30
 
@@ -148,4 +154,18 @@ defmodule NimbleTOTP do
     <<_::1, bits::31>> = p
     bits
   end
+
+  @doc """
+  Checks if the given `otp` code matches the secret.
+
+  It accepts the same options as `verification_code/2`.
+  """
+  def valid?(secret, otp, opts \\ [])
+
+  def valid?(secret, <<a1, a2, a3, a4, a5, a6>>, opts) do
+    <<e1, e2, e3, e4, e5, e6>> = verification_code(secret, opts)
+    (e1 ^^^ a1 ||| e2 ^^^ a2 ||| e3 ^^^ a3 ||| e4 ^^^ a4 ||| e5 ^^^ a5 ||| e6 ^^^ a6) === 0
+  end
+
+  def valid?(_secret, _otp, _opts), do: false
 end

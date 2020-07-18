@@ -78,6 +78,28 @@ defmodule NimbleTOTPTest do
     end
   end
 
+  describe "valid?/2" do
+    test "returns true if it matches the verification code" do
+      time = System.os_time(:second)
+
+      for _ <- 1..1000 do
+        secret = NimbleTOTP.secret()
+        code = NimbleTOTP.verification_code(secret, time: time)
+        assert NimbleTOTP.valid?(secret, code, time: time)
+        refute NimbleTOTP.valid?(secret, "abcdef", time: time)
+      end
+    end
+
+    test "returns false if the code does not have 6 digits" do
+      time = System.os_time(:second)
+      secret = NimbleTOTP.secret()
+      code = NimbleTOTP.verification_code(secret, time: time)
+      refute NimbleTOTP.valid?(secret, "", time: time)
+      refute NimbleTOTP.valid?(secret, binary_part(code, 0, 5), time: time)
+      refute NimbleTOTP.valid?(secret, <<?0, code::binary>>, time: time)
+    end
+  end
+
   defp to_unix(naive_datetime),
     do: naive_datetime |> DateTime.from_naive!("Etc/UTC") |> DateTime.to_unix()
 end
