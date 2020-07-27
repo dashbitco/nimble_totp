@@ -1,5 +1,5 @@
 # Changelog
 
-## v0.1.0 (2020-06-23)
+## v0.1.0 (2020-07-27)
 
-  * Inital version.
+  * Initial version.
