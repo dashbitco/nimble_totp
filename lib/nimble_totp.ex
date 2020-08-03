@@ -127,7 +127,7 @@ defmodule NimbleTOTP do
 
   ## Examples
 
-      NimbleTOTP.verification_code("abcd")
+      NimbleTOTP.verification_code(secret)
       #=> "569777"
 
   """
