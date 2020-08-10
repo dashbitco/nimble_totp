@@ -23,7 +23,7 @@ defmodule NimbleTOTPTest do
   end
 
   describe "secret" do
-    test "generate a binary with 20 bytes" do
+    test "generate a binary with 10 bytes" do
       secret = NimbleTOTP.secret()
 
       assert byte_size(secret) == 10
