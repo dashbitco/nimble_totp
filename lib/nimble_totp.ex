@@ -145,7 +145,14 @@ defmodule NimbleTOTP do
 
   defp hmac(secret, time, period) do
     moving_factor = <<Integer.floor_div(time, period)::64>>
-    :crypto.hmac(:sha, secret, moving_factor)
+    hmac_sha(secret, moving_factor)
+  end
+
+  # TODO: Remove me when we require OTP 22.1
+  if Code.ensure_loaded?(:crypto) and function_exported?(:crypto, :mac, 4) do
+    defp hmac_sha(key, data), do: :crypto.mac(:hmac, :sha, key, data)
+  else
+    defp hmac_sha(key, data), do: :crypto.hmac(:sha, key, data)
   end
 
   defp hmac_truncate(hmac) do
