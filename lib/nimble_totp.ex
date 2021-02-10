@@ -40,9 +40,10 @@ defmodule NimbleTOTP do
   Example:
 
       secret = NimbleTOTP.secret()
-      #=> <<63, 24, 42, 30, 95, 116, 80, 121, 106, 102>>
+      #=> <<178, 117, 46, 7, 172, 202, 108, 127, 186, 180, ...>>
 
-  By default, a binary with 10 random bytes is generated.
+  By default, a binary with 20 random bytes is generated per the
+  [HOTP RFC](https://tools.ietf.org/html/rfc4226#section-4).
 
   ### Generating URIs for QR Code
 
@@ -105,15 +106,16 @@ defmodule NimbleTOTP do
   @doc """
   Generate a binary composed of random bytes.
 
-  The number of bytes is defined by the `size` argument. Default is `10`.
+  The number of bytes is defined by the `size` argument. Default is `20` per the
+  [HOTP RFC](https://tools.ietf.org/html/rfc4226#section-4).
 
   ## Examples
 
       NimbleTOTP.secret()
-      #=> <<63, 24, 42, 30, 95, 116, 80, 121, 106, 102>>
+      #=> <<178, 117, 46, 7, 172, 202, 108, 127, 186, 180, ...>>
 
   """
-  def secret(size \\ 10) do
+  def secret(size \\ 20) do
     :crypto.strong_rand_bytes(size)
   end
 
