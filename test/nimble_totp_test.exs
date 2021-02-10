@@ -24,9 +24,15 @@ defmodule NimbleTOTPTest do
 
   describe "secret" do
     test "generate a binary with 10 bytes" do
-      secret = NimbleTOTP.secret()
+      secret = NimbleTOTP.secret(10)
 
       assert byte_size(secret) == 10
+    end
+
+    test "generate a binary with 20 bytes by default" do
+      secret = NimbleTOTP.secret()
+
+      assert byte_size(secret) == 20
     end
 
     test "always generate a different randon secret" do
