@@ -173,7 +173,9 @@ defmodule NimbleTOTP do
 
   def valid?(secret, <<a1, a2, a3, a4, a5, a6>>, opts) do
     <<e1, e2, e3, e4, e5, e6>> = verification_code(secret, opts)
-    (e1 ^^^ a1 ||| e2 ^^^ a2 ||| e3 ^^^ a3 ||| e4 ^^^ a4 ||| e5 ^^^ a5 ||| e6 ^^^ a6) === 0
+
+    (bxor(e1, a1) ||| bxor(e2, a2) ||| bxor(e3, a3) ||| bxor(e4, a4) ||| bxor(e5, a5) |||
+       bxor(e6, a6)) === 0
   end
 
   def valid?(_secret, _otp, _opts), do: false
