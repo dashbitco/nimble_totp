@@ -168,6 +168,22 @@ defmodule NimbleTOTP do
   Checks if the given `otp` code matches the secret.
 
   It accepts the same options as `verification_code/2`.
+
+  ## Grace period
+
+  In some cases it is preferable to allow the user more time to validate the code than
+  the initial period (mostly 30 seconds), the so-called grace period. Although this library
+  does not support this out of the box, you can achieve the same functionality by using
+  the time option.
+
+      def valid_code?(secret, otp) do
+        time = System.os_time(:second)
+
+        NimbleTOTP.valid?(secret, otp, time: time) or NimbleTOTP.valid?(secret, otp, time: time - 30)
+      end
+
+  In this example by validating first against the current time, but also against 30 seconds
+  ago, we allow the _previous_ code, to be still valid.
   """
   def valid?(secret, otp, opts \\ [])
 
