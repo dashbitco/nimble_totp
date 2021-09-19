@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+  * Add support for `:since`, to prevent codes from being reused
+  * Allow `NaiveDateTime` and `DateTime` to be used for `:time` and `:since`
+
 ## v0.1.2 (2021-06-06)
 
   * Update secret/0 to generate 20 random bytes

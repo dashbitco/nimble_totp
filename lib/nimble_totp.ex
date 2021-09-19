@@ -81,11 +81,34 @@ defmodule NimbleTOTP do
 
   After validating the code, you can finally persist the user's secret so you use
   it later whenever you need to authorize any critical action using 2FA.
+
+  ## Preventing codes from being reused
+
+  The [TOTP RFC](https://tools.ietf.org/html/rfc6238#section-5.2) requires that a
+  code can only be used once. This is a security feature that prevents codes from
+  being reused. To ensure codes are only considered valid if they have not been
+  used, you need to keep track of the last time the user entered a TOTP code.
+
+      NimbleTOTP.valid?(user.totp_secret, code, since: user.last_totp_at)
+
+  Assuming the code itself is valid for the given secret, if `since` is `nil`,
+  the code will be considered valid. If since is given, it will not allow
+  codes in the same time period (30 seconds by default) to be reused. The user
+  will have to wait for the next code to be generated.
   """
 
   import Bitwise
   @totp_size 6
   @default_totp_period 30
+
+  @typedoc "Unix time in seconds, `t:DateTime.t()` or `t:NaiveDateTime.t()`."
+  @type time() :: DateTime.t() | NaiveDateTime.t() | integer()
+
+  @typedoc "Options for `verification_code/2` and `valid?/3`."
+  @type option() :: {:time, time()} | {:period, pos_integer()}
+
+  @typedoc "Options for `valid?/3`."
+  @type validate_option() :: {:since, time() | nil}
 
   @doc """
   Generate the uri to be encoded in the QR code.
@@ -96,6 +119,7 @@ defmodule NimbleTOTP do
       "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme"
 
   """
+  @spec otpauth_uri(String.t(), String.t(), keyword()) :: String.t()
   def otpauth_uri(label, secret, uri_params \\ []) do
     key = Base.encode32(secret, padding: false)
     params = [{:secret, key} | uri_params]
@@ -115,6 +139,7 @@ defmodule NimbleTOTP do
       #=> <<178, 117, 46, 7, 172, 202, 108, 127, 186, 180, ...>>
 
   """
+  @spec secret(non_neg_integer()) :: binary()
   def secret(size \\ 20) do
     :crypto.strong_rand_bytes(size)
   end
@@ -124,7 +149,8 @@ defmodule NimbleTOTP do
 
   ## Options
 
-    * :time - The time in unix format to be used. Default is `System.os_time(:second)`
+    * :time - The time (either `%NaiveDateTime{}`, `%DateTime{}` or unix format) to
+      be used. Default is `System.os_time(:second)`
     * :period - The period (in seconds) in which the code is valid. Default is `30`.
 
   ## Examples
@@ -133,10 +159,16 @@ defmodule NimbleTOTP do
       #=> "569777"
 
   """
+  @spec verification_code(binary(), [option()]) :: binary()
   def verification_code(secret, opts \\ []) do
-    time = Keyword.get(opts, :time, System.os_time(:second))
+    time = opts |> Keyword.get(:time, System.os_time(:second)) |> to_unix()
     period = Keyword.get(opts, :period, @default_totp_period)
 
+    verification_code(secret, time, period)
+  end
+
+  @spec verification_code(binary(), integer(), pos_integer()) :: binary()
+  defp verification_code(secret, time, period) do
     secret
     |> hmac(time, period)
     |> hmac_truncate()
@@ -167,14 +199,27 @@ defmodule NimbleTOTP do
   @doc """
   Checks if the given `otp` code matches the secret.
 
-  It accepts the same options as `verification_code/2`.
+  ## Options
+
+    * :time - The time (either `%NaiveDateTime{}`, `%DateTime{}` or unix format) to
+      be used. Default is `System.os_time(:second)`
+    * :since - The last time the secret was used, see "Preventing TOTP code reuse" next
+    * :period - The period (in seconds) in which the code is valid. Default is `30`.
+
+  ## Preventing TOTP code reuse
+
+  The `:since` option can be used to prevent TOTP codes from being reused. When set
+  to the time when the last code was entered, only codes generated after that will
+  be considered valid. This means a user may have to wait for the duration of the
+  `:period` before they can enter a valid code again. This implementation meets the
+  [TOTP RFC](https://datatracker.ietf.org/doc/html/rfc6238#section-5.2) requirements.
 
   ## Grace period
 
   In some cases it is preferable to allow the user more time to validate the code than
   the initial period (mostly 30 seconds), the so-called grace period. Although this library
   does not support this out of the box, you can achieve the same functionality by using
-  the time option.
+  the `:time` option.
 
       def valid_code?(secret, otp) do
         time = System.os_time(:second)
@@ -185,14 +230,37 @@ defmodule NimbleTOTP do
   In this example by validating first against the current time, but also against 30 seconds
   ago, we allow the _previous_ code, to be still valid.
   """
+  @spec valid?(binary(), [option() | validate_option()]) :: boolean()
   def valid?(secret, otp, opts \\ [])
 
   def valid?(secret, <<a1, a2, a3, a4, a5, a6>>, opts) do
-    <<e1, e2, e3, e4, e5, e6>> = verification_code(secret, opts)
+    time = opts |> Keyword.get(:time, System.os_time(:second)) |> to_unix()
+    period = Keyword.get(opts, :period, @default_totp_period)
+
+    <<e1, e2, e3, e4, e5, e6>> = verification_code(secret, time, period)
 
     (bxor(e1, a1) ||| bxor(e2, a2) ||| bxor(e3, a3) ||| bxor(e4, a4) ||| bxor(e5, a5) |||
-       bxor(e6, a6)) === 0
+       bxor(e6, a6)) === 0 and not reused?(time, period, opts)
   end
 
   def valid?(_secret, _otp, _opts), do: false
+
+  @spec reused?(integer(), pos_integer(), [option() | validate_option()]) :: boolean()
+  defp reused?(time, period, opts) do
+    if since = Keyword.get(opts, :since) do
+      Integer.floor_div(time, period) <= Integer.floor_div(to_unix(since), period)
+    else
+      false
+    end
+  end
+
+  @spec to_unix(NaiveDateTime.t()) :: integer()
+  defp to_unix(%NaiveDateTime{} = naive_date_time),
+    do: NaiveDateTime.diff(naive_date_time, ~N[1970-01-01 00:00:00])
+
+  @spec to_unix(DateTime.t()) :: integer()
+  defp to_unix(%DateTime{} = date_time), do: DateTime.to_unix(date_time)
+
+  @spec to_unix(integer()) :: integer()
+  defp to_unix(epoch) when is_integer(epoch), do: epoch
 end
