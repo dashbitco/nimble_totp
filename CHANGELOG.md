@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.1.3 (2021-09-19)
 
   * Add support for `:since`, to prevent codes from being reused
   * Allow `NaiveDateTime` and `DateTime` to be used for `:time` and `:since`
