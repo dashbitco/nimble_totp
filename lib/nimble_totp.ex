@@ -247,15 +247,12 @@ defmodule NimbleTOTP do
 
   @spec reused?(integer(), pos_integer(), [option() | validate_option()]) :: boolean()
   defp reused?(time, period, opts) do
-    if since = opts |> Keyword.get(:since) |> to_unix() do
-      Integer.floor_div(time, period) <= Integer.floor_div(since, period)
+    if since = Keyword.get(opts, :since) do
+      Integer.floor_div(time, period) <= Integer.floor_div(to_unix(since), period)
     else
       false
     end
   end
-
-  @spec to_unix(nil) :: nil
-  defp to_unix(nil), do: nil
 
   @spec to_unix(NaiveDateTime.t()) :: integer()
   defp to_unix(%NaiveDateTime{} = naive_date_time),
