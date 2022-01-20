@@ -214,6 +214,10 @@ defmodule NimbleTOTP do
   `:period` before they can enter a valid code again. This implementation meets the
   [TOTP RFC](https://datatracker.ietf.org/doc/html/rfc6238#section-5.2) requirements.
 
+  Note that the TOTP codes regenerate every :period from unix epoch, so if you test
+  for validity with :since you must consider when the TOTP code would have regenerated,
+  as this would not be considered reused.
+
   ## Grace period
 
   In some cases it is preferable to allow the user more time to validate the code than
