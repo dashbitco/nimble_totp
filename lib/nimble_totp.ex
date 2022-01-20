@@ -209,9 +209,10 @@ defmodule NimbleTOTP do
   ## Preventing TOTP code reuse
 
   The `:since` option can be used to prevent TOTP codes from being reused. When set
-  to the time when the last code was entered, only codes generated after that will
-  be considered valid. This means a user may have to wait for the duration of the
-  `:period` before they can enter a valid code again. This implementation meets the
+  to the time when the last code was entered, the code generated from within that
+  period is no longer considered valid. Periods are counted from the Unix epoch.
+  This means a user may have to wait, in the worst case scenario, for the duration
+  of `:period` before they can enter a valid code again. This implementation meets the
   [TOTP RFC](https://datatracker.ietf.org/doc/html/rfc6238#section-5.2) requirements.
 
   ## Grace period
