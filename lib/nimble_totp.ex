@@ -231,7 +231,7 @@ defmodule NimbleTOTP do
   In this example by validating first against the current time, but also against 30 seconds
   ago, we allow the _previous_ code, to be still valid.
   """
-  @spec valid?(binary(), [option() | validate_option()]) :: boolean()
+  @spec valid?(binary(), String.t(), [option() | validate_option()]) :: boolean()
   def valid?(secret, otp, opts \\ [])
 
   def valid?(secret, <<a1, a2, a3, a4, a5, a6>>, opts) do
