@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## v0.2.0 (2022-05-02)
 
+This version requires Elixir v1.12+.
+
+  * Fix rendering of spaces on TOTP parameters
   * Add support for `:since`, to prevent codes from being reused
   * Allow `NaiveDateTime` and `DateTime` to be used for `:time` and `:since`
 
