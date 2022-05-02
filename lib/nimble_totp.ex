@@ -123,7 +123,7 @@ defmodule NimbleTOTP do
   def otpauth_uri(label, secret, uri_params \\ []) do
     key = Base.encode32(secret, padding: false)
     params = [{:secret, key} | uri_params]
-    query = URI.encode_query(params)
+    query = URI.encode_query(params, :rfc3986)
     "otpauth://totp/#{URI.encode(label)}?#{query}"
   end
 

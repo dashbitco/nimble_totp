@@ -17,7 +17,7 @@ defmodule NimbleTOTPTest do
       assert NimbleTOTP.otpauth_uri("#{app}:user@test.com", secret, issuer: app) == """
              otpauth://totp/Bytepack%20App:user@test.com?\
              secret=PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA&\
-             issuer=Bytepack+App\
+             issuer=Bytepack%20App\
              """
     end
   end
