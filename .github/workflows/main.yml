@@ -16,8 +16,8 @@ jobs:
       matrix:
         include:
           - pair:
-              elixir: 1.12.1
-              otp: 21.3
+              elixir: 1.12.0
+              otp: 22.3
           - pair:
               elixir: 1.13.4
               otp: 24.3
