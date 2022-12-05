@@ -19,7 +19,7 @@ dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:nimble_totp, "~> 0.1.0"}
+    {:nimble_totp, "~> 0.2.0"}
   ]
 end
 ```
