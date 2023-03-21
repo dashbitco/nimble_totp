@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.0 (2023-03-23)
+
+Stable releae.
+
 ## v0.2.0 (2022-05-02)
 
 This version requires Elixir v1.12+.

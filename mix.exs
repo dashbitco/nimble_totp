@@ -1,7 +1,7 @@
 defmodule NimbleTOTP.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "1.0.0"
   @repo_url "https://github.com/dashbitco/nimble_totp"
 
   def project do
