@@ -154,7 +154,7 @@ defmodule NimbleTOTP do
     * :period - The period (in seconds) in which the code is valid. Default is `30`.
 
   ## Examples
-
+      secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
       NimbleTOTP.verification_code(secret)
       #=> "569777"
 
