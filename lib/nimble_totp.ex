@@ -111,7 +111,7 @@ defmodule NimbleTOTP do
   @type validate_option() :: {:since, time() | nil}
 
   @doc """
-  Generate the uri to be encoded in the QR code.
+  Generate the URI to be encoded in the QR code.
 
   ## Examples
 
@@ -120,7 +120,7 @@ defmodule NimbleTOTP do
 
   """
   @spec otpauth_uri(String.t(), String.t(), keyword()) :: String.t()
-  def otpauth_uri(label, secret, uri_params \\ []) do
+  def otpauth_uri(label, secret, uri_params \\ []) when is_binary(label) and is_binary(secret) do
     key = Base.encode32(secret, padding: false)
     params = [{:secret, key} | uri_params]
     query = URI.encode_query(params, :rfc3986)
@@ -140,28 +140,29 @@ defmodule NimbleTOTP do
 
   """
   @spec secret(non_neg_integer()) :: binary()
-  def secret(size \\ 20) do
+  def secret(size \\ 20) when is_integer(size) and size >= 0 do
     :crypto.strong_rand_bytes(size)
   end
 
   @doc """
-  Generate Time-Based One-Time Password.
+  Generate Time-Based One-Time Password (TOTP).
 
   ## Options
 
-    * :time - The time (either `%NaiveDateTime{}`, `%DateTime{}` or unix format) to
-      be used. Default is `System.os_time(:second)`
-    * :period - The period (in seconds) in which the code is valid. Default is `30`.
+    * `:time` - The time (either `t:NaiveDateTime.t/0`, `t:DateTime.t/0`, or Unix format
+      *in seconds*) to be used. Default is `System.os_time(:second)`.
+    * `:period` - The period (in seconds) in which the code is valid. Default is `30`.
 
   ## Examples
+
       secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
       NimbleTOTP.verification_code(secret)
       #=> "569777"
 
   """
-  @spec verification_code(binary(), [option()]) :: binary()
-  def verification_code(secret, opts \\ []) do
-    time = opts |> Keyword.get(:time, System.os_time(:second)) |> to_unix()
+  @spec verification_code(binary(), [option()]) :: String.t()
+  def verification_code(secret, opts \\ []) when is_binary(secret) and is_list(opts) do
+    time = opts |> Keyword.get_lazy(:time, fn -> System.os_time(:second) end) |> to_unix()
     period = Keyword.get(opts, :period, @default_totp_period)
 
     verification_code(secret, time, period)
@@ -197,14 +198,15 @@ defmodule NimbleTOTP do
   end
 
   @doc """
-  Checks if the given `otp` code matches the secret.
+  Checks if the given `otp` code matches the given `secret`.
 
   ## Options
 
-    * :time - The time (either `%NaiveDateTime{}`, `%DateTime{}` or unix format) to
-      be used. Default is `System.os_time(:second)`
-    * :since - The last time the secret was used, see "Preventing TOTP code reuse" next
-    * :period - The period (in seconds) in which the code is valid. Default is `30`.
+    * `:time` - The time (either `t:NaiveDateTime.t/0`, `t:DateTime.t/0`, or Unix format
+      *in seconds*) to be used. Default is `System.os_time(:second)`.
+    * `:since` - The last time the secret was used, see "Preventing TOTP code reuse" next.
+      Same possible types as the `:time` option.
+    * `:period` - The period (in seconds) in which the code is valid. Default is `30`.
 
   ## Preventing TOTP code reuse
 
