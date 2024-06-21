@@ -152,6 +152,7 @@ defmodule NimbleTOTP do
     * `:time` - The time (either `t:NaiveDateTime.t/0`, `t:DateTime.t/0`, or Unix format
       *in seconds*) to be used. Default is `System.os_time(:second)`.
     * `:period` - The period (in seconds) in which the code is valid. Default is `30`.
+      If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
 
   ## Examples
 
@@ -207,6 +208,7 @@ defmodule NimbleTOTP do
     * `:since` - The last time the secret was used, see "Preventing TOTP code reuse" next.
       Same possible types as the `:time` option.
     * `:period` - The period (in seconds) in which the code is valid. Default is `30`.
+      If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
 
   ## Preventing TOTP code reuse
 
