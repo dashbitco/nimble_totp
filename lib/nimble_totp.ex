@@ -30,7 +30,7 @@ defmodule NimbleTOTP do
 
     * Generate secrets composed of random bytes.
     * Generate URIs to be encoded in a QR Code.
-    * Generate Time-Based One-Time Passwords based on a secret.
+    * Generate Time-Based One-Time Passwords (TOTPs) based on a secret.
 
   ### Generating the secret
 
@@ -85,23 +85,57 @@ defmodule NimbleTOTP do
   ## Preventing codes from being reused
 
   The [TOTP RFC](https://tools.ietf.org/html/rfc6238#section-5.2) requires that a
-  code can only be used once. This is a security feature that prevents codes from
-  being reused. To ensure codes are only considered valid if they have not been
-  used, you need to keep track of the last time the user entered a TOTP code.
+  *valid code* can only be used once. This is a security feature that prevents codes from
+  being reused. For example, a user could legitimately log in with a code, but in the validity
+  window an attacker could gain access to the code and *also* log in.
+
+  To ensure codes are only considered valid if they have not been
+  used, you need to keep track of the last time the user entered a valid TOTP code. For example,
+  you can do that in a database column. Then, you can use the `:since` option in `valid?/3`:
 
       NimbleTOTP.valid?(user.totp_secret, code, since: user.last_totp_at)
 
-  Assuming the code itself is valid for the given secret, if `since` is `nil`,
-  the code will be considered valid. If since is given, it will not allow
-  codes in the same time period (30 seconds by default) to be reused. The user
-  will have to wait for the next code to be generated.
+  Assuming the `code` itself is valid for the given secret:
+
+    * If `:since` is `nil`, the code will be considered valid.
+    * If since is given, it will not allow codes in the same time period (30 seconds by default)
+      to be reused. The user will have to wait for the next code to be generated.
+
+  ## Grace period
+
+  Depending on how you require users to generate codes, it might be beneficial to allow for a
+  larger validity window for the codes. For example, that might be useful if you deliver
+  codes through potentially-slow mediums (like SMS). In this case, you can do one of two things:
+
+    * Generate codes that are valid for longer periods of time than the default 30 seconds.
+      However, this potentially exposes a valid code for longer, so consider this carefully
+      for your use case.
+
+    * Consider a number of "previous codes" also valid. To do this, use the `:time` option
+      in `valid?/3` (see examples there).
+
+  ## Preventing enumeration attacks
+
+  If you only store the last time a user entered a *valid* TOTP code, you can [prevent
+  a valid code from being reused](#module-preventing-codes-from-being-reused). However,
+  this approach by itself doesn't generally prevent an attacker from attempting to "guess"
+  a valid code by **enumerating** codes. TOTP codes are somewhat short, at only one million
+  possible values. You'll likely have other rate-limiting mechanisms in place that
+  would prevent an attacker from attempting codes in rapid sequence, but if you don't, you'll
+  also want to limit the number of attempts in some way.
+
+  For example, you can also store the last time a user attempted to enter *any* code, even
+  an invalid one. You can also use the `last_totp_at` value from the previous example to
+  store all attempts, not just valid codes. This way, you'll naturally prevent enumerating
+  attacks. However, UX might suffer from this because you'll also require legitimate users
+  that mistype a valid code to wait for the next code to be generated.
   """
 
   import Bitwise
   @totp_size 6
   @default_totp_period 30
 
-  @typedoc "Unix time in seconds, `t:DateTime.t()` or `t:NaiveDateTime.t()`."
+  @typedoc "Unix time in seconds, `t:DateTime.t/0` or `t:NaiveDateTime.t/0`."
   @type time() :: DateTime.t() | NaiveDateTime.t() | integer()
 
   @typedoc "Options for `verification_code/2` and `valid?/3`."
