@@ -123,12 +123,6 @@ defmodule NimbleTOTP do
   possible values. You'll likely have other rate-limiting mechanisms in place that
   would prevent an attacker from attempting codes in rapid sequence, but if you don't, you'll
   also want to limit the number of attempts in some way.
-
-  For example, you can also store the last time a user attempted to enter *any* code, even
-  an invalid one. You can also use the `last_totp_at` value from the previous example to
-  store all attempts, not just valid codes. This way, you'll naturally prevent enumerating
-  attacks. However, UX might suffer from this because you'll also require legitimate users
-  that mistype a valid code to wait for the next code to be generated.
   """
 
   import Bitwise
