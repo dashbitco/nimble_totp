@@ -80,7 +80,21 @@ defmodule NimbleTOTP do
       #=> false
 
   After validating the code, you can finally persist the user's secret so you use
-  it later whenever you need to authorize any critical action using 2FA.
+  it later whenever you need to authorize any critical action using 2FA, by using
+  the same `valid?/2` function.
+
+  ## Grace period
+
+  When you generate a verification code, the code will be valid between `0..period`
+  seconds, where the default period is `30s`. This means that, in the worst case
+  scenario, you may generate a verification code that will become invalid in the
+  next second.
+
+  Depending on how you require users to generate codes, it might be beneficial to allow for a
+  larger validity window for the codes. For example, that might be useful if you deliver
+  codes through potentially-slow mediums (like SMS). In this case, consider a number of
+  "previous codes" also valid. To do this, use the `:time` option in `valid?/3` (see the
+  function documentation for more examples).
 
   ## Preventing codes from being reused
 
@@ -98,21 +112,9 @@ defmodule NimbleTOTP do
   Assuming the `code` itself is valid for the given secret:
 
     * If `:since` is `nil`, the code will be considered valid.
+
     * If since is given, it will not allow codes in the same time period (30 seconds by default)
       to be reused. The user will have to wait for the next code to be generated.
-
-  ## Grace period
-
-  Depending on how you require users to generate codes, it might be beneficial to allow for a
-  larger validity window for the codes. For example, that might be useful if you deliver
-  codes through potentially-slow mediums (like SMS). In this case, you can do one of two things:
-
-    * Generate codes that are valid for longer periods of time than the default 30 seconds.
-      However, this potentially exposes a valid code for longer, so consider this carefully
-      for your use case.
-
-    * Consider a number of "previous codes" also valid. To do this, use the `:time` option
-      in `valid?/3` (see examples there).
 
   ## Preventing enumeration attacks
 
@@ -233,8 +235,10 @@ defmodule NimbleTOTP do
 
     * `:time` - The time (either `t:NaiveDateTime.t/0`, `t:DateTime.t/0`, or Unix format
       *in seconds*) to be used. Default is `System.os_time(:second)`.
+
     * `:since` - The last time the secret was used, see "Preventing TOTP code reuse" next.
       Same possible types as the `:time` option.
+
     * `:period` - The period (in seconds) in which the code is valid. Default is `30`.
       If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
 
@@ -249,19 +253,20 @@ defmodule NimbleTOTP do
 
   ## Grace period
 
-  In some cases it is preferable to allow the user more time to validate the code than
-  the initial period (mostly 30 seconds), the so-called grace period. Although this library
-  does not support this out of the box, you can achieve the same functionality by using
-  the `:time` option.
+  In some cases it is preferable to allow the user more time to validate the code.
+  Generated codes are valid between `0..period` seconds, which means in the worst
+  case scenario a generated code may be about to expire. You can increase this
+  interval, the so-called grace period, by using the `:time` option:
 
       def valid_code?(secret, otp) do
         time = System.os_time(:second)
 
-        NimbleTOTP.valid?(secret, otp, time: time) or NimbleTOTP.valid?(secret, otp, time: time - 30)
+        NimbleTOTP.valid?(secret, otp, time: time) or
+          NimbleTOTP.valid?(secret, otp, time: time - 30)
       end
 
-  In this example by validating first against the current time, but also against 30 seconds
-  ago, we allow the _previous_ code, to be still valid.
+  In this example by validating first against the current time, but also against
+  30 seconds ago, we allow the _previous_ code, to be still valid.
   """
   @spec valid?(binary(), String.t(), [option() | validate_option()]) :: boolean()
   def valid?(secret, otp, opts \\ [])
