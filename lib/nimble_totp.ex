@@ -51,13 +51,13 @@ defmodule NimbleTOTP do
   configured the authentication app in a compatible device. The most common
   way to do that is to generate a QR Code that can be read by the app.
 
-  You can use `NimbleTOTP.otpauth_uri/3` along with
+  You can use `NimbleTOTP.otpauth_uri/4` along with
   [eqrcode](https://github.com/SiliconJungles/eqrcode) to generate the QR
   code as **SVG**.
 
   Example:
 
-      uri = NimbleTOTP.otpauth_uri("Acme:alice", secret, issuer: "Acme")
+      uri = NimbleTOTP.otpauth_uri("Acme", "alice", secret)
       #=> "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme"
       uri |> EQRCode.encode() |> EQRCode.svg()
       #=> "<?xml version=\\"1.0\\" standalone=\\"yes\\"?>\\n<svg version=\\"1.1\\" ...
@@ -145,16 +145,46 @@ defmodule NimbleTOTP do
 
   ## Examples
 
+      iex> NimbleTOTP.otpauth_uri("Acme", "alice", "abcd")
+      "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme"
+
+      iex> NimbleTOTP.otpauth_uri("Acme", "alice", "abcd", extra: "some_value")
+      "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme&extra=some_value"
+  """
+  @spec otpauth_uri(String.t(), String.t(), <<>>, keyword()) :: String.t()
+  def otpauth_uri(issuer, account, secret, uri_params)
+      when is_binary(issuer) and is_binary(account) and is_binary(secret) and is_list(uri_params) do
+    issuer =~ ":" && raise ArgumentError, "issuer cannot have :"
+    account =~ ":" && raise ArgumentError, "account cannot have :"
+    key = Base.encode32(secret, padding: false)
+    params = uri_params |> Keyword.put(:issuer, issuer) |> Keyword.put(:secret, key)
+    query = URI.encode_query(params, :rfc3986)
+    "otpauth://totp/#{URI.encode(issuer)}:#{URI.encode(account)}?#{query}"
+  end
+
+  @doc """
+  Generate the URI to be encoded in the QR code.
+
+  ## Examples
+
       iex> NimbleTOTP.otpauth_uri("Acme:alice", "abcd", issuer: "Acme")
       "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme"
 
   """
-  @spec otpauth_uri(String.t(), String.t(), keyword()) :: String.t()
-  def otpauth_uri(label, secret, uri_params \\ []) when is_binary(label) and is_binary(secret) do
+  @spec otpauth_uri(String.t(), String.t(), keyword() | <<>>) :: String.t()
+  def otpauth_uri(label, secret, uri_params \\ [])
+
+  def otpauth_uri(label, secret, uri_params)
+      when is_binary(label) and is_binary(secret) and is_list(uri_params) do
     key = Base.encode32(secret, padding: false)
     params = [{:secret, key} | uri_params]
     query = URI.encode_query(params, :rfc3986)
     "otpauth://totp/#{URI.encode(label)}?#{query}"
+  end
+
+  def otpauth_uri(issuer, account, secret)
+      when is_binary(issuer) and is_binary(account) and is_binary(secret) do
+    otpauth_uri(issuer, account, secret, [])
   end
 
   @doc """

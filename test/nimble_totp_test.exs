@@ -3,14 +3,14 @@ defmodule NimbleTOTPTest do
   doctest NimbleTOTP
 
   describe "otpauth_uri" do
-    test "Generate the QR Code uri without params" do
+    test "Generate the QR Code uri without params (no issuer)" do
       secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
 
       assert NimbleTOTP.otpauth_uri("bytepack", secret) ==
                "otpauth://totp/bytepack?secret=PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA"
     end
 
-    test "Generate the uri with extra params" do
+    test "Generate the uri with extra params (issuer:account)" do
       secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
       app = "Bytepack App"
 
@@ -18,6 +18,30 @@ defmodule NimbleTOTPTest do
              otpauth://totp/Bytepack%20App:user@test.com?\
              secret=PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA&\
              issuer=Bytepack%20App\
+             """
+    end
+
+    test "Generate the QR Code uri without params" do
+      secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
+      app = "Bytepack App"
+
+      assert NimbleTOTP.otpauth_uri(app, "bytepack", secret) == """
+             otpauth://totp/Bytepack%20App:bytepack?\
+             secret=PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA&\
+             issuer=Bytepack%20App\
+             """
+    end
+
+    test "Generate the uri with extra params" do
+      secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
+      app = "Bytepack App"
+      extra = "extra value"
+
+      assert NimbleTOTP.otpauth_uri(app, "user@test.com", secret, extra: extra) == """
+             otpauth://totp/Bytepack%20App:user@test.com?\
+             secret=PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA&\
+             issuer=Bytepack%20App&\
+             extra=extra%20value\
              """
     end
   end
