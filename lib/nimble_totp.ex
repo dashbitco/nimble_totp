@@ -164,6 +164,8 @@ defmodule NimbleTOTP do
 
   @doc """
   Generate the URI to be encoded in the QR code.
+  
+  This function is deprecated, use `otpauth_uri/4` which has a safer API.
 
   ## Examples
 
