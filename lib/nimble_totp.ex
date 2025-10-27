@@ -30,6 +30,7 @@ defmodule NimbleTOTP do
 
     * Generate secrets composed of random bytes.
     * Generate URIs to be encoded in a QR Code.
+    * Decode otpauth://totp/ URIs and extract the secret, label and issuer.
     * Generate Time-Based One-Time Passwords (TOTPs) based on a secret.
 
   ### Generating the secret
@@ -189,6 +190,52 @@ defmodule NimbleTOTP do
   end
 
   @doc """
+  Extract the secret and label from an otpauth URI, as well as the extra properties.
+
+  The issuer will be extracted either from a label prefix or from an extra URI parameter.
+  If both are present, they have to be equal or an error will be returned.
+
+  ## Examples
+
+      iex> NimbleTOTP.decompose_otpauth_uri("otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme")
+      {:ok, "abcd", "alice", %{"issuer" => "Acme"}}
+
+      iex> NimbleTOTP.decompose_otpauth_uri("otpauth://totp/Acme:alice?secret=INVALID!&issuer=Acme")
+      :error
+
+  """
+  @spec decompose_otpauth_uri(String.t()) ::
+          {:ok, <<>>, String.t(), map()} | {:error, :invalid_uri}
+  def decompose_otpauth_uri(uri) when is_binary(uri) do
+    with true <- uri =~ ~r"^otpauth://totp/",
+         {:ok, uri} <- URI.new(uri),
+         ["", label] <- String.split(uri.path, "/"),
+         # Reject empty prefix issuer or empty labels (with or without prefix issuer)
+         false <- label =~ ~r/^(:|$|.*:$)/,
+         query = URI.decode_query(uri.query, %{}, :rfc3986),
+         {secret, query} <- Map.pop(query, "secret"),
+         {:ok, secret} <- Base.decode32(secret, padding: false),
+         param_issuer <- Map.get(query, "issuer"),
+         false <- (param_issuer || "") =~ ":" do
+      case String.split(label, ":") do
+        [label] when param_issuer != "" ->
+          {:ok, secret, label, query}
+
+        [^param_issuer, label] ->
+          {:ok, secret, label, query}
+
+        [issuer, label] when is_nil(param_issuer) ->
+          {:ok, secret, label, Map.put(query, "issuer", issuer)}
+
+        _ ->
+          :error
+      end
+    else
+      _ -> :error
+    end
+  end
+
+  @doc """
   Generate a binary composed of random bytes.
 
   The number of bytes is defined by the `size` argument. Default is `20` per the
@@ -217,7 +264,12 @@ defmodule NimbleTOTP do
 
   ## Examples
 
-      secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
+      secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA", padding: false)
+      NimbleTOTP.verification_code(secret)
+      #=> "569777"
+
+      uri = "otpauth://Acme:alice?secret=PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA"
+      {:ok, secret, _label, _uri_params} = decompose_otpauth_uri(uri)
       NimbleTOTP.verification_code(secret)
       #=> "569777"
 

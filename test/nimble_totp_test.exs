@@ -171,6 +171,89 @@ defmodule NimbleTOTPTest do
     end
   end
 
+  describe "decompose_otpauth_uri" do
+    test "supports the absence of issuer" do
+      uri = "otpauth://totp/alice?secret=MFRGGZA"
+      assert {:ok, "abcd", "alice", %{}} == NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+
+    test "extracts the issuer from the prefix" do
+      uri = "otpauth://totp/Acme:alice?secret=MFRGGZA"
+
+      assert {:ok, "abcd", "alice", %{"issuer" => "Acme"}} ==
+               NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+
+    test "extracts the issuer from the URI params" do
+      uri = "otpauth://totp/alice?secret=MFRGGZA&issuer=Acme"
+
+      assert {:ok, "abcd", "alice", %{"issuer" => "Acme"}} ==
+               NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+
+    test "accepts identical issuers in prefix and URI params" do
+      uri = "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme"
+
+      assert {:ok, "abcd", "alice", %{"issuer" => "Acme"}} ==
+               NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+
+    test "preserves extra URI params" do
+      uri = "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme&extra=1"
+
+      {:ok, "abcd", "alice", params} = NimbleTOTP.decompose_otpauth_uri(uri)
+      assert [{"extra", "1"}, {"issuer", "Acme"}] == Enum.sort(params)
+    end
+
+    test "rejects an empty label with no prefix issuer" do
+      uri = "otpauth://totp/?secret=MFRGGZA"
+
+      assert :error == NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+
+    test "rejects an empty label with a prefix issuer" do
+      uri = "otpauth://totp/Acme:?secret=MFRGGZA"
+
+      assert :error == NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+
+    test "rejects an empty prefix issuer" do
+      uri = "otpauth://totp/:alice?secret=MFRGGZA"
+
+      assert :error == NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+
+    test "rejects an empty issuer from URI params" do
+      uri = "otpauth://totp/alice?secret=MFRGGZA&issuer="
+
+      assert :error == NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+
+    test "rejects different issuers in prefix and URI params" do
+      uri = "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Corp"
+
+      assert :error == NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+
+    test "rejects URI with wrong scheme or host" do
+      uri = "otpauth://hotp/Acme:alice?secret=MFRGGZA&issuer=Corp"
+
+      assert :error == NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+
+    test "rejects URI if issuer contains ':'" do
+      uri = "otpauth://hotp/alice?secret=MFRGGZA&issuer=Acme:Corp"
+
+      assert :error == NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+
+    test "rejects URI if label contains ':'" do
+      uri = "otpauth://hotp/Acme:Corp:alice?secret=MFRGGZA"
+
+      assert :error == NimbleTOTP.decompose_otpauth_uri(uri)
+    end
+  end
+
   defp to_unix(naive_datetime),
     do: naive_datetime |> DateTime.from_naive!("Etc/UTC") |> DateTime.to_unix()
 end
