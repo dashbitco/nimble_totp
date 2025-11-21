@@ -319,23 +319,19 @@ defmodule NimbleTOTP do
 
     code = verification_code(secret, time, period, totp_length)
 
-    validate_digits(code, otp) == 0 and not reused?(time, period, opts)
+    byte_size(code) == byte_size(otp) and validate_digits(code, otp) == 0 and
+      not reused?(time, period, opts)
   end
 
   def valid?(_secret, _otp, _opts), do: false
 
   @spec validate_digits(integer(), integer()) :: :error | integer()
-  defp validate_digits(e, a)
-       when byte_size(e) !== byte_size(a), do: :error
-
-  defp validate_digits(<<e, e_rest::binary>>, <<a, a_rest::binary>>)
-       when byte_size(e_rest) > 0 and byte_size(a_rest) > 0 do
+  defp validate_digits(<<e, e_rest::binary>>, <<a, a_rest::binary>>) do
     bxor(e, a) ||| validate_digits(e_rest, a_rest)
   end
 
-  defp validate_digits(<<e, e_rest::binary>>, <<a, a_rest::binary>>)
-       when byte_size(e_rest) <= 0 and byte_size(a_rest) <= 0 do
-    bxor(e, a)
+  defp validate_digits(<<>>, <<>>) do
+    0
   end
 
   @spec reused?(integer(), pos_integer(), [option() | validate_option()]) :: boolean()
