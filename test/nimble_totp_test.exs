@@ -120,17 +120,17 @@ defmodule NimbleTOTPTest do
       for _ <- 1..1000 do
         secret = NimbleTOTP.secret()
 
-        code = NimbleTOTP.verification_code(secret, time: time)
-        assert code == NimbleTOTP.verification_code(secret, time: date_time)
-        assert code == NimbleTOTP.verification_code(secret, time: naive_date_time)
+        code = NimbleTOTP.verification_code(secret, time: time, totp_size: 8)
+        assert code == NimbleTOTP.verification_code(secret, time: date_time, totp_size: 8)
+        assert code == NimbleTOTP.verification_code(secret, time: naive_date_time, totp_size: 8)
 
-        assert NimbleTOTP.valid?(secret, code, time: time)
-        assert NimbleTOTP.valid?(secret, code, time: date_time)
-        assert NimbleTOTP.valid?(secret, code, time: naive_date_time)
+        assert NimbleTOTP.valid?(secret, code, time: time, totp_size: 8)
+        assert NimbleTOTP.valid?(secret, code, time: date_time, totp_size: 8)
+        assert NimbleTOTP.valid?(secret, code, time: naive_date_time, totp_size: 8)
 
-        refute NimbleTOTP.valid?(secret, "abcdef", time: time)
-        refute NimbleTOTP.valid?(secret, "abcdef", time: date_time)
-        refute NimbleTOTP.valid?(secret, "abcdef", time: naive_date_time)
+        refute NimbleTOTP.valid?(secret, "abcdefgh", time: time, totp_size: 8)
+        refute NimbleTOTP.valid?(secret, "abcdefgh", time: date_time, totp_size: 8)
+        refute NimbleTOTP.valid?(secret, "abcdefgh", time: naive_date_time, totp_size: 8)
       end
     end
 
@@ -161,7 +161,7 @@ defmodule NimbleTOTPTest do
       end
     end
 
-    test "returns false if the code does not have 6 digits" do
+    test "returns false if the code does not have 6 digits for default totp_size" do
       time = System.os_time(:second)
       secret = NimbleTOTP.secret()
       code = NimbleTOTP.verification_code(secret, time: time)
