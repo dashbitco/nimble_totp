@@ -55,9 +55,17 @@ defmodule NimbleTOTP do
   [eqrcode](https://github.com/SiliconJungles/eqrcode) to generate the QR
   code as **SVG**.
 
+  If you use a digits length larger than the default of 6 you will need to
+  pass it on to the function.
+
   Example:
 
       uri = NimbleTOTP.otpauth_uri("Acme", "alice", secret)
+      #=> "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme"
+      uri |> EQRCode.encode() |> EQRCode.svg()
+      #=> "<?xml version=\\"1.0\\" standalone=\\"yes\\"?>\\n<svg version=\\"1.1\\" ...
+       
+      uri = NimbleTOTP.otpauth_uri("Acme", "alice", secret, digits: 8)
       #=> "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme"
       uri |> EQRCode.encode() |> EQRCode.svg()
       #=> "<?xml version=\\"1.0\\" standalone=\\"yes\\"?>\\n<svg version=\\"1.1\\" ...
@@ -128,7 +136,7 @@ defmodule NimbleTOTP do
   """
 
   import Bitwise
-  @default_totp_length 6
+  @default_totp_digits 6
   @default_totp_period 30
 
   @typedoc "Unix time in seconds, `t:DateTime.t/0` or `t:NaiveDateTime.t/0`."
@@ -214,8 +222,8 @@ defmodule NimbleTOTP do
       *in seconds*) to be used. Default is `System.os_time(:second)`.
     * `:period` - The period (in seconds) in which the code is valid. Default is `30`.
       If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
-    * `:totp_length` - The desired length of the totp. Default is 6.
-      If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
+    * `:totp_digits` - The desired length of the totp. Default is 6.
+      If this option is given to `verification_code/2`, it must also be given to `valid?/3` and `otpauth_uri/3`/`otpauth_uri/4`.
 
   ## Examples
 
@@ -228,21 +236,21 @@ defmodule NimbleTOTP do
   def verification_code(secret, opts \\ []) when is_binary(secret) and is_list(opts) do
     time = opts |> Keyword.get_lazy(:time, fn -> System.os_time(:second) end) |> to_unix()
     period = Keyword.get(opts, :period, @default_totp_period)
-    totp_length = Keyword.get(opts, :totp_length, @default_totp_length)
+    totp_digits = Keyword.get(opts, :totp_digits, @default_totp_digits)
 
-    totp_length not in 6..10 && raise ArgumentError, "length must be between 6 and 10"
+    totp_digits not in 6..10 && raise ArgumentError, "length must be between 6 and 10"
 
-    verification_code(secret, time, period, totp_length)
+    verification_code(secret, time, period, totp_digits)
   end
 
   @spec verification_code(binary(), integer(), pos_integer(), integer()) :: binary()
-  defp verification_code(secret, time, period, totp_length) do
+  defp verification_code(secret, time, period, totp_digits) do
     secret
     |> hmac(time, period)
     |> hmac_truncate()
-    |> rem(Integer.pow(10, totp_length))
+    |> rem(Integer.pow(10, totp_digits))
     |> to_string()
-    |> String.pad_leading(totp_length, "0")
+    |> String.pad_leading(totp_digits, "0")
   end
 
   defp hmac(secret, time, period) do
@@ -278,8 +286,8 @@ defmodule NimbleTOTP do
     * `:period` - The period (in seconds) in which the code is valid. Default is `30`.
       If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
 
-    * `:totp_length` - The desired size of the totp. Default is 6.
-      If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
+    * `:totp_digits` - The desired length of the totp. Default is 6.
+      If this option is given to `verification_code/2`, it must also be given to `valid?/3` and `otpauth_uri/3`/`otpauth_uri/4`.
 
   ## Preventing TOTP code reuse
 
@@ -313,11 +321,11 @@ defmodule NimbleTOTP do
   def valid?(secret, otp, opts) when is_binary(otp) do
     time = opts |> Keyword.get(:time, System.os_time(:second)) |> to_unix()
     period = Keyword.get(opts, :period, @default_totp_period)
-    totp_length = Keyword.get(opts, :totp_length, @default_totp_length)
+    totp_digits = Keyword.get(opts, :totp_digits, @default_totp_digits)
 
-    totp_length not in 6..10 && raise ArgumentError, "length must be between 6 and 10"
+    totp_digits not in 6..10 && raise ArgumentError, "length must be between 6 and 10"
 
-    code = verification_code(secret, time, period, totp_length)
+    code = verification_code(secret, time, period, totp_digits)
 
     byte_size(code) == byte_size(otp) and validate_digits(code, otp) == 0 and
       not reused?(time, period, opts)
