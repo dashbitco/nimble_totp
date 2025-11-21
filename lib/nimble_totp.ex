@@ -128,7 +128,7 @@ defmodule NimbleTOTP do
   """
 
   import Bitwise
-  @totp_size 6
+  @default_totp_size 6
   @default_totp_period 30
 
   @typedoc "Unix time in seconds, `t:DateTime.t/0` or `t:NaiveDateTime.t/0`."
@@ -214,6 +214,8 @@ defmodule NimbleTOTP do
       *in seconds*) to be used. Default is `System.os_time(:second)`.
     * `:period` - The period (in seconds) in which the code is valid. Default is `30`.
       If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
+    * `:totp_size` - The desired size of the totp. Default is 6.
+      If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
 
   ## Examples
 
@@ -226,18 +228,22 @@ defmodule NimbleTOTP do
   def verification_code(secret, opts \\ []) when is_binary(secret) and is_list(opts) do
     time = opts |> Keyword.get_lazy(:time, fn -> System.os_time(:second) end) |> to_unix()
     period = Keyword.get(opts, :period, @default_totp_period)
+    totp_size = Keyword.get(opts, :totp_size, @default_totp_size)
 
-    verification_code(secret, time, period)
+    totp_size > 10 && raise ArgumentError, "totp_size cannot be above 10"
+    totp_size <= 0 && raise ArgumentError, "totp_size cannot be 0 or under"
+
+    verification_code(secret, time, period, totp_size)
   end
 
-  @spec verification_code(binary(), integer(), pos_integer()) :: binary()
-  defp verification_code(secret, time, period) do
+  @spec verification_code(binary(), integer(), pos_integer(), integer()) :: binary()
+  defp verification_code(secret, time, period, totp_size) do
     secret
     |> hmac(time, period)
     |> hmac_truncate()
-    |> rem(1_000_000)
+    |> rem(Integer.pow(10, totp_size))
     |> to_string()
-    |> String.pad_leading(@totp_size, "0")
+    |> String.pad_leading(totp_size, "0")
   end
 
   defp hmac(secret, time, period) do
@@ -273,6 +279,9 @@ defmodule NimbleTOTP do
     * `:period` - The period (in seconds) in which the code is valid. Default is `30`.
       If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
 
+    * `:totp_size` - The desired size of the totp. Default is 6.
+      If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
+
   ## Preventing TOTP code reuse
 
   The `:since` option can be used to prevent TOTP codes from being reused. When set
@@ -302,17 +311,34 @@ defmodule NimbleTOTP do
   @spec valid?(binary(), String.t(), [option() | validate_option()]) :: boolean()
   def valid?(secret, otp, opts \\ [])
 
-  def valid?(secret, <<a1, a2, a3, a4, a5, a6>>, opts) do
+  def valid?(secret, otp, opts) when is_binary(otp) do
     time = opts |> Keyword.get(:time, System.os_time(:second)) |> to_unix()
     period = Keyword.get(opts, :period, @default_totp_period)
+    totp_size = Keyword.get(opts, :totp_size, @default_totp_size)
 
-    <<e1, e2, e3, e4, e5, e6>> = verification_code(secret, time, period)
+    totp_size > 10 && raise ArgumentError, "totp_size cannot be above 10"
+    totp_size <= 0 && raise ArgumentError, "totp_size cannot be 0 or under"
 
-    (bxor(e1, a1) ||| bxor(e2, a2) ||| bxor(e3, a3) ||| bxor(e4, a4) ||| bxor(e5, a5) |||
-       bxor(e6, a6)) === 0 and not reused?(time, period, opts)
+    code = verification_code(secret, time, period, totp_size)
+
+    validate_digits(code, otp) == 0 and not reused?(time, period, opts)
   end
 
   def valid?(_secret, _otp, _opts), do: false
+
+  @spec validate_digits(integer(), integer()) :: :error | integer()
+  defp validate_digits(e, a)
+       when byte_size(e) !== byte_size(a), do: :error
+
+  defp validate_digits(<<e, e_rest::binary>>, <<a, a_rest::binary>>)
+       when byte_size(e_rest) > 0 and byte_size(a_rest) > 0 do
+    bxor(e, a) ||| validate_digits(e_rest, a_rest)
+  end
+
+  defp validate_digits(<<e, e_rest::binary>>, <<a, a_rest::binary>>)
+       when byte_size(e_rest) <= 0 and byte_size(a_rest) <= 0 do
+    bxor(e, a)
+  end
 
   @spec reused?(integer(), pos_integer(), [option() | validate_option()]) :: boolean()
   defp reused?(time, period, opts) do
