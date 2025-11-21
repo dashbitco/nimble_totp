@@ -55,8 +55,8 @@ defmodule NimbleTOTP do
   [eqrcode](https://github.com/SiliconJungles/eqrcode) to generate the QR
   code as **SVG**.
 
-  If you use a digits length larger than the default of 6 you will need to
-  pass it on to the function.
+  If you use more than 6 digits for the totp token you will need to specify
+  it in the otpauth uri with the `digits` option.
 
   Example:
 
