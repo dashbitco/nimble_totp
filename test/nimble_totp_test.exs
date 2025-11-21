@@ -120,6 +120,28 @@ defmodule NimbleTOTPTest do
       for _ <- 1..1000 do
         secret = NimbleTOTP.secret()
 
+        code = NimbleTOTP.verification_code(secret, time: time)
+        assert code == NimbleTOTP.verification_code(secret, time: date_time)
+        assert code == NimbleTOTP.verification_code(secret, time: naive_date_time)
+
+        assert NimbleTOTP.valid?(secret, code, time: time)
+        assert NimbleTOTP.valid?(secret, code, time: date_time)
+        assert NimbleTOTP.valid?(secret, code, time: naive_date_time)
+
+        refute NimbleTOTP.valid?(secret, "abcdefgh", time: time)
+        refute NimbleTOTP.valid?(secret, "abcdefgh", time: date_time)
+        refute NimbleTOTP.valid?(secret, "abcdefgh", time: naive_date_time)
+      end
+    end
+
+    test "returns true if it matches the verification code with a length of 8" do
+      time = System.os_time(:second)
+      date_time = DateTime.from_unix!(time, :second)
+      naive_date_time = DateTime.to_naive(date_time)
+
+      for _ <- 1..1000 do
+        secret = NimbleTOTP.secret()
+
         code = NimbleTOTP.verification_code(secret, time: time, totp_size: 8)
         assert code == NimbleTOTP.verification_code(secret, time: date_time, totp_size: 8)
         assert code == NimbleTOTP.verification_code(secret, time: naive_date_time, totp_size: 8)
@@ -161,13 +183,20 @@ defmodule NimbleTOTPTest do
       end
     end
 
-    test "returns false if the code does not have 6 digits for default totp_size" do
+    test "returns false if the code does not have 6 digits for default totp_length" do
       time = System.os_time(:second)
       secret = NimbleTOTP.secret()
       code = NimbleTOTP.verification_code(secret, time: time)
       refute NimbleTOTP.valid?(secret, "", time: time)
       refute NimbleTOTP.valid?(secret, binary_part(code, 0, 5), time: time)
       refute NimbleTOTP.valid?(secret, <<?0, code::binary>>, time: time)
+    end
+
+    test "returns false if the totp_length is under 6 or above 10" do
+      time = System.os_time(:second)
+      secret = NimbleTOTP.secret()
+      assert_raise ArgumentError, "length must be between 6 and 10", fn -> NimbleTOTP.verification_code(secret, time: time, totp_length: 5) end
+      assert_raise ArgumentError, "length must be between 6 and 10", fn -> NimbleTOTP.verification_code(secret, time: time, totp_length: 11) end
     end
   end
 
