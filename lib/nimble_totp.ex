@@ -238,7 +238,7 @@ defmodule NimbleTOTP do
     period = Keyword.get(opts, :period, @default_totp_period)
     digits = Keyword.get(opts, :digits, @default_digits)
 
-    digits not in 6..10 && raise ArgumentError, "length must be between 6 and 10"
+    digits not in 6..10 && raise ArgumentError, "digits must be between 6 and 10"
 
     verification_code(secret, time, period, digits)
   end
@@ -323,7 +323,7 @@ defmodule NimbleTOTP do
     period = Keyword.get(opts, :period, @default_totp_period)
     digits = Keyword.get(opts, :digits, @default_digits)
 
-    digits not in 6..10 && raise ArgumentError, "length must be between 6 and 10"
+    digits not in 6..10 && raise ArgumentError, "digits must be between 6 and 10"
 
     code = verification_code(secret, time, period, digits)
 
