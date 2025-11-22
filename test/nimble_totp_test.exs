@@ -195,8 +195,14 @@ defmodule NimbleTOTPTest do
     test "returns false if the totp_length is under 6 or above 10" do
       time = System.os_time(:second)
       secret = NimbleTOTP.secret()
-      assert_raise ArgumentError, "length must be between 6 and 10", fn -> NimbleTOTP.verification_code(secret, time: time, digits: 5) end
-      assert_raise ArgumentError, "length must be between 6 and 10", fn -> NimbleTOTP.verification_code(secret, time: time, digits: 11) end
+
+      assert_raise ArgumentError, "digits must be between 6 and 10", fn ->
+        NimbleTOTP.verification_code(secret, time: time, digits: 5)
+      end
+
+      assert_raise ArgumentError, "digits must be between 6 and 10", fn ->
+        NimbleTOTP.verification_code(secret, time: time, digits: 11)
+      end
     end
   end
 
