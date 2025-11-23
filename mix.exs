@@ -8,7 +8,7 @@ defmodule NimbleTOTP.MixProject do
     [
       app: :nimble_totp,
       version: @version,
-      elixir: "~> 1.12",
+      elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
 
@@ -30,14 +30,17 @@ defmodule NimbleTOTP.MixProject do
 
   defp deps do
     [
-      {:ex_doc, ">= 0.19.0", only: :docs}
+      {:ex_doc, ">= 0.0.0", only: :docs}
     ]
   end
 
   defp package do
     [
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => @repo_url}
+      links: %{
+        "GitHub" => @repo_url,
+        "Changelog" => "#{@repo_url}/blob/main/CHANGELOG.md"
+      }
     ]
   end
 
