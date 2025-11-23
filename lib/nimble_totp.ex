@@ -258,12 +258,7 @@ defmodule NimbleTOTP do
     hmac_sha(secret, moving_factor)
   end
 
-  # TODO: Remove me when we require OTP 22.1
-  if Code.ensure_loaded?(:crypto) and function_exported?(:crypto, :mac, 4) do
-    defp hmac_sha(key, data), do: :crypto.mac(:hmac, :sha, key, data)
-  else
-    defp hmac_sha(key, data), do: :crypto.hmac(:sha, key, data)
-  end
+  defp hmac_sha(key, data), do: :crypto.mac(:hmac, :sha, key, data)
 
   defp hmac_truncate(hmac) do
     <<_::19-binary, _::4, offset::4>> = hmac

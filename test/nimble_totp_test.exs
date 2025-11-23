@@ -44,6 +44,34 @@ defmodule NimbleTOTPTest do
              extra=extra%20value\
              """
     end
+
+    test "Generate the uri with extra params (deprecated, with digits option)" do
+      secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
+      app = "Bytepack App"
+
+      assert NimbleTOTP.otpauth_uri("#{app}:user@test.com", secret, issuer: app, digits: 8) == """
+             otpauth://totp/Bytepack%20App:user@test.com?\
+             secret=PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA&\
+             issuer=Bytepack%20App&\
+             digits=8\
+             """
+    end
+
+    test "raises error if issuer contains a colon (otpauth_uri/4)" do
+      secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
+
+      assert_raise ArgumentError, "issuer cannot have :", fn ->
+        NimbleTOTP.otpauth_uri("Acme:Inc", "alice", secret, [])
+      end
+    end
+
+    test "raises error if account contains a colon (otpauth_uri/4)" do
+      secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
+
+      assert_raise ArgumentError, "account cannot have :", fn ->
+        NimbleTOTP.otpauth_uri("Acme", "alice:corp", secret, [])
+      end
+    end
   end
 
   describe "secret" do
@@ -203,6 +231,11 @@ defmodule NimbleTOTPTest do
       assert_raise ArgumentError, "digits must be between 6 and 10", fn ->
         NimbleTOTP.verification_code(secret, time: time, digits: 11)
       end
+    end
+
+    test "returns false if the otp is not a binary" do
+      secret = NimbleTOTP.secret()
+      refute NimbleTOTP.valid?(secret, 123_456, time: System.os_time(:second))
     end
   end
 
