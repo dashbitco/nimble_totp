@@ -187,9 +187,9 @@ defmodule NimbleTOTPTest do
         assert NimbleTOTP.valid?(secret, code, time: date_time)
         assert NimbleTOTP.valid?(secret, code, time: naive_date_time)
 
-        refute NimbleTOTP.valid?(secret, "abcdefgh", time: time)
-        refute NimbleTOTP.valid?(secret, "abcdefgh", time: date_time)
-        refute NimbleTOTP.valid?(secret, "abcdefgh", time: naive_date_time)
+        refute NimbleTOTP.valid?(secret, "abcdef", time: time)
+        refute NimbleTOTP.valid?(secret, "abcdef", time: date_time)
+        refute NimbleTOTP.valid?(secret, "abcdef", time: naive_date_time)
       end
     end
 

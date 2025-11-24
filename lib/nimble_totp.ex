@@ -344,7 +344,7 @@ defmodule NimbleTOTP do
 
   def valid?(_secret, _otp, _opts), do: false
 
-  @spec validate_digits(integer(), integer()) :: :error | integer()
+  @spec validate_digits(integer(), integer()) :: integer()
   defp validate_digits(<<e, e_rest::binary>>, <<a, a_rest::binary>>) do
     bxor(e, a) ||| validate_digits(e_rest, a_rest)
   end
