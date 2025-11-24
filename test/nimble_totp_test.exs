@@ -57,6 +57,21 @@ defmodule NimbleTOTPTest do
              """
     end
 
+    test "Generate the uri with extra params (deprecated, with algorithm option)" do
+      secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
+      app = "Bytepack App"
+
+      assert NimbleTOTP.otpauth_uri("#{app}:user@test.com", secret,
+               issuer: app,
+               algorithm: :sha512
+             ) == """
+             otpauth://totp/Bytepack%20App:user@test.com?\
+             secret=PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA&\
+             issuer=Bytepack%20App&\
+             algorithm=sha512\
+             """
+    end
+
     test "raises error if issuer contains a colon (otpauth_uri/4)" do
       secret = Base.decode32!("PTEPUGZ7DUWTBGMW4WLKB6U63MGKKMCA")
 
@@ -136,6 +151,22 @@ defmodule NimbleTOTPTest do
       code2 = NimbleTOTP.verification_code(secret, time: time2)
 
       assert code1 == code2
+    end
+
+    test "generate different codes with different algorithm" do
+      secret = NimbleTOTP.secret()
+      time1 = ~N[2020-04-08 17:49:59Z]
+      time2 = ~N[2020-04-08 17:50:00Z]
+      time3 = ~N[2020-04-08 17:50:30Z]
+
+      code1 = NimbleTOTP.verification_code(secret, time: time1, algorithm: :sha)
+      assert code1 == NimbleTOTP.verification_code(secret, time: time1, algorithm: :sha)
+
+      code2 = NimbleTOTP.verification_code(secret, time: time2, algorithm: :sha256)
+      assert code2 == NimbleTOTP.verification_code(secret, time: time2, algorithm: :sha256)
+
+      code3 = NimbleTOTP.verification_code(secret, time: time3, algorithm: :sha512)
+      assert code3 == NimbleTOTP.verification_code(secret, time: time3, algorithm: :sha512)
     end
   end
 
@@ -230,6 +261,15 @@ defmodule NimbleTOTPTest do
 
       assert_raise ArgumentError, "digits must be between 6 and 10", fn ->
         NimbleTOTP.verification_code(secret, time: time, digits: 11)
+      end
+    end
+
+    test "rejects if given an invalid algorithm" do
+      time = System.os_time(:second)
+      secret = NimbleTOTP.secret()
+
+      assert_raise ArgumentError, "algorithm must be one of :sha, :sha256, :sha512", fn ->
+        NimbleTOTP.verification_code(secret, time: time, algorithm: :invalid)
       end
     end
 
