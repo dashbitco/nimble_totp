@@ -159,14 +159,14 @@ defmodule NimbleTOTPTest do
       time2 = ~N[2020-04-08 17:50:00Z]
       time3 = ~N[2020-04-08 17:50:30Z]
 
-      code1 = NimbleTOTP.verification_code(secret, time: time1, algorihtm: :sha)
-      assert code1 == NimbleTOTP.verification_code(secret, time: time1, algorihtm: :sha)
+      code1 = NimbleTOTP.verification_code(secret, time: time1, algorithm: :sha)
+      assert code1 == NimbleTOTP.verification_code(secret, time: time1, algorithm: :sha)
 
-      code2 = NimbleTOTP.verification_code(secret, time: time2, algorihtm: :sha256)
-      assert code2 == NimbleTOTP.verification_code(secret, time: time2, algorihtm: :sha256)
+      code2 = NimbleTOTP.verification_code(secret, time: time2, algorithm: :sha256)
+      assert code2 == NimbleTOTP.verification_code(secret, time: time2, algorithm: :sha256)
 
-      code3 = NimbleTOTP.verification_code(secret, time: time3, algorihtm: :sha512)
-      assert code3 == NimbleTOTP.verification_code(secret, time: time3, algorihtm: :sha512)
+      code3 = NimbleTOTP.verification_code(secret, time: time3, algorithm: :sha512)
+      assert code3 == NimbleTOTP.verification_code(secret, time: time3, algorithm: :sha512)
     end
   end
 
