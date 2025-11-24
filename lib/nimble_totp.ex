@@ -65,8 +65,8 @@ defmodule NimbleTOTP do
       uri |> EQRCode.encode() |> EQRCode.svg()
       #=> "<?xml version=\\"1.0\\" standalone=\\"yes\\"?>\\n<svg version=\\"1.1\\" ...
        
-      uri = NimbleTOTP.otpauth_uri("Acme", "alice", secret, digits: 8)
-      #=> "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme"
+      uri = NimbleTOTP.otpauth_uri("Acme", "alice", secret, digits: 8, algorithm: :sha512)
+      #=> "otpauth://totp/Acme:alice?secret=MFRGGZA&issuer=Acme&digits=8&algorithm=sha512"
       uri |> EQRCode.encode() |> EQRCode.svg()
       #=> "<?xml version=\\"1.0\\" standalone=\\"yes\\"?>\\n<svg version=\\"1.1\\" ...
 
@@ -138,6 +138,7 @@ defmodule NimbleTOTP do
   import Bitwise
   @default_digits 6
   @default_totp_period 30
+  @default_algorithm :sha
 
   @typedoc "Unix time in seconds, `t:DateTime.t/0` or `t:NaiveDateTime.t/0`."
   @type time() :: DateTime.t() | NaiveDateTime.t() | integer()
@@ -224,6 +225,8 @@ defmodule NimbleTOTP do
       If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
     * `:digits` - The desired length of the totp. Default is 6.
       If this option is given to `verification_code/2`, it must also be given to `valid?/3` and `otpauth_uri/3`/`otpauth_uri/4`.
+    * `:algorithm` - The algorithm to use for the totp. Default is :sha.
+      If this option is given to `verification_code/2`, it must also be given to `valid?/3` and `otpauth_uri/3`/`otpauth_uri/4`.
 
   ## Examples
 
@@ -237,31 +240,37 @@ defmodule NimbleTOTP do
     time = opts |> Keyword.get_lazy(:time, fn -> System.os_time(:second) end) |> to_unix()
     period = Keyword.get(opts, :period, @default_totp_period)
     digits = Keyword.get(opts, :digits, @default_digits)
+    algorithm = Keyword.get(opts, :algorithm, @default_algorithm)
 
     digits not in 6..10 && raise ArgumentError, "digits must be between 6 and 10"
 
-    verification_code(secret, time, period, digits)
+    algorithm not in [:sha, :sha256, :sha512] &&
+      raise ArgumentError, "algorithm must be one of :sha, :sha256, :sha512"
+
+    verification_code(secret, time, period, digits, algorithm)
   end
 
-  @spec verification_code(binary(), integer(), pos_integer(), integer()) :: binary()
-  defp verification_code(secret, time, period, digits) do
+  @spec verification_code(binary(), integer(), pos_integer(), integer(), atom()) :: binary()
+  defp verification_code(secret, time, period, digits, algorithm) do
     secret
-    |> hmac(time, period)
+    |> hmac(time, period, algorithm)
     |> hmac_truncate()
     |> rem(Integer.pow(10, digits))
     |> to_string()
     |> String.pad_leading(digits, "0")
   end
 
-  defp hmac(secret, time, period) do
+  defp hmac(secret, time, period, algorithm) do
     moving_factor = <<Integer.floor_div(time, period)::64>>
-    hmac_sha(secret, moving_factor)
+    hmac_sha(secret, moving_factor, algorithm)
   end
 
-  defp hmac_sha(key, data), do: :crypto.mac(:hmac, :sha, key, data)
+  defp hmac_sha(key, data, algorithm), do: :crypto.mac(:hmac, algorithm, key, data)
 
   defp hmac_truncate(hmac) do
-    <<_::19-binary, _::4, offset::4>> = hmac
+    key_length = byte_size(hmac) - 1
+
+    <<_::size(key_length)-binary, _::4, offset::4>> = hmac
     <<_::size(offset)-binary, p::4-binary, _::binary>> = hmac
     <<_::1, bits::31>> = p
     bits
@@ -282,6 +291,9 @@ defmodule NimbleTOTP do
       If this option is given to `verification_code/2`, it must also be given to `valid?/3`.
 
     * `:digits` - The desired length of the totp. Default is 6.
+      If this option is given to `verification_code/2`, it must also be given to `valid?/3` and `otpauth_uri/3`/`otpauth_uri/4`.
+
+    * `:algorithm` - The algorithm to use for the totp. Default is :sha.
       If this option is given to `verification_code/2`, it must also be given to `valid?/3` and `otpauth_uri/3`/`otpauth_uri/4`.
 
   ## Preventing TOTP code reuse
@@ -317,10 +329,14 @@ defmodule NimbleTOTP do
     time = opts |> Keyword.get(:time, System.os_time(:second)) |> to_unix()
     period = Keyword.get(opts, :period, @default_totp_period)
     digits = Keyword.get(opts, :digits, @default_digits)
+    algorithm = Keyword.get(opts, :algorithm, @default_algorithm)
 
     digits not in 6..10 && raise ArgumentError, "digits must be between 6 and 10"
 
-    code = verification_code(secret, time, period, digits)
+    algorithm not in [:sha, :sha256, :sha512] &&
+      raise ArgumentError, "algorithm must be one of :sha, :sha256, :sha512"
+
+    code = verification_code(secret, time, period, digits, algorithm)
 
     byte_size(code) == byte_size(otp) and validate_digits(code, otp) == 0 and
       not reused?(time, period, opts)
