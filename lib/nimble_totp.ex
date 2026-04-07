@@ -103,6 +103,8 @@ defmodule NimbleTOTP do
   codes through potentially-slow mediums (like SMS). In this case, consider a number of
   "previous codes" also valid. To do this, use the `:time` option in `valid?/3` (see the
   function documentation for more examples).
+  See the [TOTP RFC](https://datatracker.ietf.org/doc/html/rfc6238#section-5.2)
+  for security and usability implications.
 
   ## Preventing codes from being reused
 
@@ -321,6 +323,9 @@ defmodule NimbleTOTP do
 
   In this example by validating first against the current time, but also against
   30 seconds ago, we allow the _previous_ code, to be still valid.
+
+  A grace period can also prevent flaky tests which would occur when a code is
+  generated right before a time boundary, then considered invalid.
   """
   @spec valid?(binary(), String.t(), [option() | validate_option()]) :: boolean()
   def valid?(secret, otp, opts \\ [])
