@@ -272,8 +272,8 @@ defmodule NimbleTOTP do
   defp hmac_truncate(hmac) do
     key_length = byte_size(hmac) - 1
 
-    <<_::size(key_length)-binary, _::4, offset::4>> = hmac
-    <<_::size(offset)-binary, p::4-binary, _::binary>> = hmac
+    <<_::size(^key_length)-binary, _::4, offset::4>> = hmac
+    <<_::size(^offset)-binary, p::4-binary, _::binary>> = hmac
     <<_::1, bits::31>> = p
     bits
   end
