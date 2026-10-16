@@ -39,7 +39,7 @@ defmodule NimbleTOTP.MixProject do
       licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @repo_url,
-        "Changelog" => "#{@repo_url}/blob/main/CHANGELOG.md"
+        "Changelog" => "#{@repo_url}/blob/master/CHANGELOG.md"
       }
     ]
   end
