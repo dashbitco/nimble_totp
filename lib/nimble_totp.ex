@@ -270,11 +270,8 @@ defmodule NimbleTOTP do
   defp hmac_sha(key, data, algorithm), do: :crypto.mac(:hmac, algorithm, key, data)
 
   defp hmac_truncate(hmac) do
-    key_length = byte_size(hmac) - 1
-
-    <<_::size(key_length)-binary, _::4, offset::4>> = hmac
-    <<_::size(offset)-binary, p::4-binary, _::binary>> = hmac
-    <<_::1, bits::31>> = p
+    offset = Bitwise.band(:binary.last(hmac), 0x0F)
+    <<_::1, bits::31>> = binary_part(hmac, offset, 4)
     bits
   end
 
